@@ -2,6 +2,15 @@ import React, { useState } from 'react'
 import { Machine } from 'xstate'
 import { useMachine } from '@xstate/react'
 
+const fakeRegister = () => {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      resolve('ok')
+      window.clearTimeout(timer)
+    }, 1500)
+  })
+}
+
 const stateMachine = Machine({
   initial: 'idle',
   states: {
@@ -19,9 +28,15 @@ const stateMachine = Machine({
       }
     },
     loading: {
-      on: {
-        PAYMENT_RECEIVED: 'success',
-        PAYMENT_FAILED: 'error'
+      invoke: {
+        id: 'doRegister',
+        src: (ctx, event) => fakeRegister(),
+        onDone: {
+          target: 'success'
+        },
+        onError: {
+          target: 'error'
+        }
       }
     },
     error: {
