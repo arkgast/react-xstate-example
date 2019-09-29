@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Machine } from 'xstate'
 import { useMachine } from '@xstate/react'
 
@@ -7,7 +7,15 @@ const stateMachine = Machine({
   states: {
     idle: {
       on: {
-        SUBMIT: 'loading'
+        SUBMIT: [
+          {
+            target: 'loading',
+            cond: (ctx, event) => event.data.name && event.data.phone
+          },
+          {
+            target: 'error'
+          }
+        ]
       }
     },
     loading: {
@@ -18,7 +26,10 @@ const stateMachine = Machine({
     },
     error: {
       on: {
-        SUBMIT: 'loading'
+        SUBMIT: {
+          target: 'loading',
+          cond: (_, event) =>  event.data.name && event.data.phone
+        }
       }
     },
     success: {
@@ -29,13 +40,39 @@ const stateMachine = Machine({
 
 const App = () => {
   const [machine, send] = useMachine(stateMachine)
+  const [model, setModel] = useState({ name: '', phone: '' })
 
   console.log(machine.value)
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target
+    setModel(currentModel => ({
+      ...currentModel,
+      [name]: value
+    }))
+  }
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    send({ type: 'SUBMIT', data: model })
+  }
 
   return (
     <div>
       <h1>React State Machine</h1>
-      <button onClick={() => send({ type: 'SUBMIT', data: {} })}>Change state</button>
+      <form onSubmit={handleSubmit}>
+        <p>
+          <label htmlFor="name">Name: </label>
+          <input type='text' name='name' value={model.name} onChange={handleChange} />
+        </p>
+        <p>
+          <label htmlFor="phone">Phone: </label>
+          <input type='number' name='phone' value={model.phone} onChange={handleChange} />
+        </p>
+        <p>
+          <button onClick={() => {}}>Save</button>
+        </p>
+      </form>
     </div>
   )
 }
