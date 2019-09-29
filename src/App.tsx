@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Machine } from 'xstate'
+import { Machine, assign } from 'xstate'
 import { useMachine } from '@xstate/react'
 
 const fakeRegister = () => {
@@ -13,6 +13,9 @@ const fakeRegister = () => {
 
 const stateMachine = Machine({
   initial: 'idle',
+  context: {
+    msg: ''
+  },
   states: {
     idle: {
       on: {
@@ -32,10 +35,12 @@ const stateMachine = Machine({
         id: 'doRegister',
         src: (ctx, event) => fakeRegister(),
         onDone: {
-          target: 'success'
+          target: 'success',
+          actions: assign({ msg: (ctx: any, event: any) => event.data })
         },
         onError: {
-          target: 'error'
+          target: 'error',
+          actions: assign({ msg: (ctx: any, event: any) => event.data })
         }
       }
     },
@@ -57,8 +62,6 @@ const App = () => {
   const [machine, send] = useMachine(stateMachine)
   const [model, setModel] = useState({ name: '', phone: '' })
 
-  console.log(machine.value)
-
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target
     setModel(currentModel => ({
@@ -75,6 +78,12 @@ const App = () => {
   return (
     <div>
       <h1>React State Machine</h1>
+      <h3>Current state: {machine.value}</h3>
+      {machine.matches('error') && (
+        <div>
+          {machine.context.msg && <p>{machine.context.msg}</p>}
+        </div>
+      )}
       <form onSubmit={handleSubmit}>
         <p>
           <label htmlFor="name">Name: </label>
@@ -85,7 +94,7 @@ const App = () => {
           <input type='number' name='phone' value={model.phone} onChange={handleChange} />
         </p>
         <p>
-          <button onClick={() => {}}>Save</button>
+          <button>Save</button>
         </p>
       </form>
     </div>
